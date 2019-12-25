@@ -1,29 +1,24 @@
 import { useMachine } from "@xstate/react";
 import React from "react";
-import { fetchMachine } from "../../machines/fetch";
+import { fetchMachine } from "../../services/fetch";
+
+const apiCall = () =>
+  new Promise((resolve, reject) => {
+    setTimeout(() => resolve([1, 2, 3]), 2000);
+  });
 
 export const Fetcher = () => {
-  const [fetchState, sendToFetch] = useMachine(fetchMachine, {
-    actions: {
-      fetchData: (ctx, event) => {
-        return new Promise((resolve, reject) => {
-          setTimeout(resolve, 2000);
-        })
-          .then(() => {
-            sendToFetch({ type: "RESOLVE", data: [1, 2, 3] });
-          })
-          .catch(error => {
-            sendToFetch({ type: "REJECT", error: error.message });
-          });
-      }
+  const [state, dispatch] = useMachine(fetchMachine, {
+    services: {
+      fetchData: apiCall
     }
   });
 
   return (
     <>
-      <div>{fetchState.value}</div>
-      <div>{JSON.stringify(fetchState.context)}</div>
-      <button onClick={() => sendToFetch({ type: "FETCH" })}>Fetch</button>
+      <div>{state.value}</div>
+      <div>{state.context.data}</div>
+      <button onClick={() => dispatch({ type: "FETCH" })}>Fetch</button>
     </>
   );
 };
