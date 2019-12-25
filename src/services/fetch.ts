@@ -2,7 +2,7 @@ import { assign, Machine } from "xstate";
 
 interface Context {
   data: any | null;
-  error: string | null;
+  error: Error | null;
 }
 
 interface State {
@@ -16,7 +16,7 @@ interface State {
 type Event =
   | { type: "FETCH" }
   | { type: "RESOLVE"; data: any }
-  | { type: "REJECT"; error: string };
+  | { type: "REJECT"; error: Error };
 
 export const fetchMachine = Machine<Context, State, Event>(
   {
