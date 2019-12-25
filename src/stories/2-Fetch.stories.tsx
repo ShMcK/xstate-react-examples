@@ -6,4 +6,4 @@ export default {
   component: Fetcher
 };
 
-export const Toggle = () => <Fetcher />;
+export const Fetch = () => <Fetcher />;
