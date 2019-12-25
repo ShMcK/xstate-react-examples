@@ -1,12 +1,13 @@
 import { useMachine } from "@xstate/react";
 import React from "react";
-import { Context, Event, redditMachine } from "../../machines/reddit";
+import { redditMachine } from "../../machines/reddit";
+import { SubReddit } from "./SubReddit";
 
 const subreddits = ["frontend", "reactjs", "vuejs"];
 
 export const Reddit = () => {
-  const [current, send] = useMachine<Context, Event>(redditMachine);
-  const { subreddit, posts } = current.context;
+  const [current, send] = useMachine(redditMachine);
+  const { subreddit } = current.context;
 
   return (
     <main>
@@ -21,17 +22,7 @@ export const Reddit = () => {
           })}
         </select>
       </header>
-      <section>
-        <h1>{current.matches("idle") ? "Select a subreddit" : subreddit}</h1>
-        {current.matches({ selected: "loading" }) && <div>Loading...</div>}
-        {current.matches({ selected: "loaded" }) && (
-          <ul>
-            {posts.map(post => (
-              <li key={post.title}>{post.title}</li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {subreddit && <SubReddit name={subreddit} key={subreddit} />}
     </main>
   );
 };
