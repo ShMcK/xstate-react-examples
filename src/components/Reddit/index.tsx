@@ -22,7 +22,7 @@ export const Reddit = () => {
           })}
         </select>
       </header>
-      {subreddit && <SubReddit name={subreddit} key={subreddit} />}
+      {subreddit && <SubReddit service={subreddit} key={subreddit.id} />}
     </main>
   );
 };

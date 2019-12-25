@@ -1,11 +1,11 @@
-import { assign, Machine } from "xstate";
+import { assign, Machine, spawn } from "xstate";
 
 type Post = any;
 
 export interface SubredditContext {
   subreddit: string | null;
   posts: Post[] | null;
-  lastUpdated: Date | null;
+  lastUpdated: string | null;
 }
 
 export interface SubredditState {
@@ -66,7 +66,8 @@ export const createSubredditMachine = (subreddit: string) => {
 };
 
 interface RedditContext {
-  subreddit: string | null;
+  subreddits: { [name: string]: any };
+  subreddit: any | null;
 }
 
 interface RedditState {
@@ -82,6 +83,7 @@ export const redditMachine = Machine<RedditContext, RedditState, RedditEvent>({
   id: "reddit",
   initial: "idle",
   context: {
+    subreddits: {},
     subreddit: null
   },
   states: {
@@ -91,8 +93,28 @@ export const redditMachine = Machine<RedditContext, RedditState, RedditEvent>({
   on: {
     SELECT: {
       target: ".selected",
-      actions: assign({
-        subreddit: (context, event: RedditEvent) => event.name
+      actions: assign((context, event) => {
+        // Use the existing subreddit actor if one doesn't exist
+        let subreddit = context.subreddits[event.name];
+
+        if (subreddit) {
+          return {
+            ...context,
+            subreddit
+          };
+        }
+
+        // Otherwise, spawn a new subreddit actor and
+        // save it in the subreddits object
+        subreddit = spawn(createSubredditMachine(event.name));
+
+        return {
+          subreddits: {
+            ...context.subreddits,
+            [event.name]: subreddit
+          },
+          subreddit
+        };
       })
     }
   }
