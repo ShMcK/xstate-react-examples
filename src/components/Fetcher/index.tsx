@@ -17,8 +17,14 @@ export const Fetcher = () => {
   return (
     <>
       <div>{state.value}</div>
-      <div>{state.context.data}</div>
-      <button onClick={() => dispatch({ type: "FETCH" })}>Fetch</button>
+      {state.matches("successful") && <div>{state.context.data}</div>}
+
+      <button
+        onClick={() => dispatch({ type: "FETCH" })}
+        disabled={state.matches("pending")}
+      >
+        Fetch
+      </button>
     </>
   );
 };
