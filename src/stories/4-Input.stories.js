@@ -6,7 +6,7 @@ export default {
   component: Input
 };
 
-const validations = [
+const validators = [
   {
     check: value => !value.length,
     message: "Required"
@@ -21,4 +21,4 @@ const validations = [
   }
 ];
 
-export const FormInput = () => <Input validations={validations} />;
+export const FormInput = () => <Input validators={validators} />;

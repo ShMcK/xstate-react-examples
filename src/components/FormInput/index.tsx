@@ -2,14 +2,16 @@ import { useMachine } from "@xstate/react";
 import React from "react";
 import { assign, Machine } from "xstate";
 
-const createValidator = validations => async ctx => {
-  const validated = await validations.filter(v => v.check(ctx.value));
-  if (!validated.length) {
+const createValidator = validators => async ctx => {
+  if (!validators || !validators.length) {
     return true;
-  } else {
+  }
+  const validated = await validators.filter(v => v.check(ctx.value));
+  if (validated.length) {
     const errors = validated.map(v => v.message);
     throw errors;
   }
+  return true;
 };
 
 const inputMachine = Machine(
@@ -72,13 +74,13 @@ const inputMachine = Machine(
 );
 
 interface Props {
-  validations: { check: (value: string) => boolean; message: string }[];
+  validators: { check: (value: string) => boolean; message: string }[];
 }
 
-export const Input = ({ validations }: Props) => {
+export const Input = ({ validators }: Props) => {
   const [current, send] = useMachine(inputMachine, {
     services: {
-      validate: createValidator(validations)
+      validate: createValidator(validators)
     }
   });
 
