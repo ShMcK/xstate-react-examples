@@ -96,7 +96,7 @@ export const Input = ({ initialValue, validators }: Props) => {
 
   return (
     <>
-      <div>State: {JSON.stringify(current.value)}</div>
+      <div>Input: {JSON.stringify(current.value)}</div>
       <input
         type="text"
         onChange={handleChange}
