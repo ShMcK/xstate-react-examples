@@ -24,12 +24,14 @@ const formMachine = Machine({
 });
 
 interface Props {
+  initialValues: any;
   onSubmit: any;
   children: any;
 }
 
 export const Form = (props: Props) => {
   const [current, send] = useMachine(formMachine, {
+    current: props.initialValues || {},
     services: {
       onSubmit: props.onSubmit
     }
@@ -39,6 +41,7 @@ export const Form = (props: Props) => {
     e.preventDefault();
     send({ type: "SUBMIT" });
   };
+
   return (
     <>
       <div>Form:{JSON.stringify(current.value)}</div>

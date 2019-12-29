@@ -2,6 +2,16 @@ import { useMachine } from "@xstate/react";
 import React from "react";
 import { assign, Machine } from "xstate";
 
+type Validator = { check: (value: string) => boolean; message: string };
+
+interface Props {
+  initialValue?: string;
+  validators?: Validator[];
+  onChange(value: string): void;
+  value: string;
+  children: React.ReactElement;
+}
+
 const createValidator = validators => async ctx => {
   if (!validators) {
     return true;
@@ -14,7 +24,7 @@ const createValidator = validators => async ctx => {
   return true;
 };
 
-const inputMachine = Machine(
+const fieldMachine = Machine(
   {
     initial: "untouched",
     context: {
@@ -48,10 +58,10 @@ const inputMachine = Machine(
             }
           },
           invalid: {
-            onEntry: "setError"
+            onEntry: ["setError"]
           },
           valid: {
-            onEntry: "clearError"
+            onEntry: ["clearError"]
           }
         }
       }
@@ -73,38 +83,27 @@ const inputMachine = Machine(
   }
 );
 
-type Validator = { check: (value: string) => boolean; message: string };
-
-interface Props {
-  initialValue?: string;
-  validators?: Validator[];
-}
-
-export const Input = ({ initialValue, validators }: Props) => {
-  const [current, send] = useMachine(inputMachine, {
+export const Field = (props: Props) => {
+  const [current, send] = useMachine(fieldMachine, {
     context: {
-      value: initialValue || ""
+      value: props.value || props.initialValue || ""
     },
     services: {
-      validate: createValidator(validators)
+      validate: createValidator(props.validators)
     }
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    send({ type: "UPDATE", value: e.target.value });
+    const value = e.target.value;
+    send({ type: "UPDATE", value });
+    props.onChange(value);
   };
 
-  return (
-    <>
-      <div>Input: {JSON.stringify(current.value)}</div>
-      <input
-        type="text"
-        onChange={handleChange}
-        value={current.context.value}
-      />
-      {current.matches({ touched: "invalid" }) && (
-        <div>{current.context.errors[0]}</div>
-      )}
-    </>
-  );
+  return React.cloneElement(props.children, {
+    onChange: handleChange,
+    value: current.context.value,
+    current
+  });
 };
+
+export { NumberInput, TextInput } from "./Inputs";
