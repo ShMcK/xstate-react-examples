@@ -3,7 +3,7 @@ import React from "react";
 import { assign, Machine } from "xstate";
 
 const createValidator = validators => async ctx => {
-  if (!validators || !validators.length) {
+  if (!validators) {
     return true;
   }
   const validated = await validators.filter(v => v.check(ctx.value));
@@ -73,12 +73,18 @@ const inputMachine = Machine(
   }
 );
 
+type Validator = { check: (value: string) => boolean; message: string };
+
 interface Props {
-  validators: { check: (value: string) => boolean; message: string }[];
+  initialValue?: string;
+  validators?: Validator[];
 }
 
-export const Input = ({ validators }: Props) => {
+export const Input = ({ initialValue, validators }: Props) => {
   const [current, send] = useMachine(inputMachine, {
+    context: {
+      value: initialValue || ""
+    },
     services: {
       validate: createValidator(validators)
     }

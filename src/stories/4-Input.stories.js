@@ -21,4 +21,10 @@ const validators = [
   }
 ];
 
-export const FormInput = () => <Input validators={validators} />;
+export const FormInput = () => <Input />;
+
+export const FormInputWithValidators = () => <Input validators={validators} />;
+
+export const FormInputWithInitialValue = () => (
+  <Input initialValue="Hello" validators={validators} />
+);
