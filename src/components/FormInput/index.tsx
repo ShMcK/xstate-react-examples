@@ -2,77 +2,82 @@ import { useMachine } from "@xstate/react";
 import React from "react";
 import { assign, Machine } from "xstate";
 
-const inputMachine = Machine(
-  {
-    initial: "untouched",
-    context: {
-      value: "",
-      error: ""
-    },
-    on: {
-      UPDATE: {
-        target: "touched",
-        actions: "updateValue"
-      }
-    },
-    states: {
-      untouched: {},
-      touched: {
-        initial: "pending",
-        states: {
-          pending: {
-            after: {
-              500: [
-                {
-                  cond: "validate",
-                  target: "valid"
-                },
-                {
+const createValidator = validations => async ctx => {
+  const validated = await validations.filter(v => v.check(ctx.value));
+  if (!validated.length) {
+    return true;
+  } else {
+    const errors = validated.map(v => v.message);
+    throw errors;
+  }
+};
+
+const createInputMachine = ({ validations }: Props) =>
+  Machine(
+    {
+      initial: "untouched",
+      context: {
+        value: "",
+        errors: []
+      },
+      on: {
+        UPDATE: {
+          target: "touched",
+          actions: "updateValue"
+        }
+      },
+      states: {
+        untouched: {},
+        touched: {
+          initial: "pending",
+          states: {
+            pending: {
+              after: {
+                300: "validating"
+              }
+            },
+            validating: {
+              invoke: {
+                id: "validate",
+                src: createValidator(validations),
+                onDone: "valid",
+                onError: {
                   target: "invalid"
                 }
-              ]
+              }
+            },
+            invalid: {
+              onEntry: "setError"
+            },
+            valid: {
+              onEntry: "clearError"
             }
-          },
-          invalid: {
-            onEntry: "setError"
-          },
-          valid: {
-            onEntry: "clearError"
           }
         }
       }
+    },
+    {
+      actions: {
+        updateValue: assign((_, event) => ({
+          // @ts-ignore
+          value: event.value
+        })),
+        clearError: assign((_, event) => ({
+          errors: []
+        })),
+        setError: assign((ctx, event) => ({
+          errors: event.data
+        }))
+      }
     }
-  },
-  {
-    actions: {
-      updateValue: assign((_, event) => ({
-        // @ts-ignore
-        value: event.value
-      })),
-      clearError: assign((_, event) => ({
-        error: ""
-      }))
-    }
-  }
-);
+  );
 
 interface Props {
   validations: { check: (value: string) => boolean; message: string }[];
 }
 
 export const Input = ({ validations }: Props) => {
-  const [current, send] = useMachine(inputMachine, {
-    actions: {
-      setError: assign((ctx, event) => ({
-        error: validations.filter(({ check }) => !check(ctx.value))[0].message
-      }))
-    },
-    guards: {
-      validate(ctx, f, g) {
-        return !validations.filter(({ check }) => !check(ctx.value)).length;
-      }
-    }
-  });
+  const [current, send] = useMachine(createInputMachine({ validations }));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     send({ type: "UPDATE", value: e.target.value });
@@ -80,14 +85,14 @@ export const Input = ({ validations }: Props) => {
 
   return (
     <>
-      <div>{JSON.stringify(current.value)}</div>
+      <div>State: {JSON.stringify(current.value)}</div>
       <input
         type="text"
         onChange={handleChange}
         value={current.context.value}
       />
       {current.matches({ touched: "invalid" }) && (
-        <div>{current.context.error}</div>
+        <div>{current.context.errors[0]}</div>
       )}
     </>
   );

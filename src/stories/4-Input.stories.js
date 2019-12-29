@@ -8,8 +8,16 @@ export default {
 
 const validations = [
   {
-    check: value => value.length > 3,
+    check: value => !value.length,
+    message: "Required"
+  },
+  {
+    check: value => value.length <= 3,
     message: "Too short"
+  },
+  {
+    check: value => !value.includes("@"),
+    message: 'Must include "@" symbol'
   }
 ];
 
