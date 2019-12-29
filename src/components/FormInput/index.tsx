@@ -12,72 +12,75 @@ const createValidator = validations => async ctx => {
   }
 };
 
-const createInputMachine = ({ validations }: Props) =>
-  Machine(
-    {
-      initial: "untouched",
-      context: {
-        value: "",
-        errors: []
-      },
-      on: {
-        UPDATE: {
-          target: "touched",
-          actions: "updateValue"
-        }
-      },
-      states: {
-        untouched: {},
-        touched: {
-          initial: "pending",
-          states: {
-            pending: {
-              after: {
-                300: "validating"
-              }
-            },
-            validating: {
-              invoke: {
-                id: "validate",
-                src: createValidator(validations),
-                onDone: "valid",
-                onError: {
-                  target: "invalid"
-                }
-              }
-            },
-            invalid: {
-              onEntry: "setError"
-            },
-            valid: {
-              onEntry: "clearError"
+const inputMachine = Machine(
+  {
+    initial: "untouched",
+    context: {
+      value: "",
+      errors: []
+    },
+    on: {
+      UPDATE: {
+        target: "touched",
+        actions: "updateValue"
+      }
+    },
+    states: {
+      untouched: {},
+      touched: {
+        initial: "pending",
+        states: {
+          pending: {
+            after: {
+              300: "validating"
             }
+          },
+          validating: {
+            invoke: {
+              id: "validate",
+              src: "validate",
+              onDone: "valid",
+              onError: {
+                target: "invalid"
+              }
+            }
+          },
+          invalid: {
+            onEntry: "setError"
+          },
+          valid: {
+            onEntry: "clearError"
           }
         }
       }
-    },
-    {
-      actions: {
-        updateValue: assign((_, event) => ({
-          // @ts-ignore
-          value: event.value
-        })),
-        clearError: assign((_, event) => ({
-          errors: []
-        })),
-        setError: assign((ctx, event) => ({
-          errors: event.data
-        }))
-      }
     }
-  );
+  },
+  {
+    actions: {
+      updateValue: assign((_, event) => ({
+        // @ts-ignore
+        value: event.value
+      })),
+      clearError: assign((_, event) => ({
+        errors: []
+      })),
+      setError: assign((ctx, event) => ({
+        errors: event.data
+      }))
+    }
+  }
+);
 
 interface Props {
   validations: { check: (value: string) => boolean; message: string }[];
 }
 
 export const Input = ({ validations }: Props) => {
-  const [current, send] = useMachine(createInputMachine({ validations }));
+  const [current, send] = useMachine(inputMachine, {
+    services: {
+      validate: createValidator(validations)
+    }
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     send({ type: "UPDATE", value: e.target.value });
