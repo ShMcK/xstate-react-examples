@@ -6,4 +6,11 @@ export default {
   component: Input
 };
 
-export const FormInput = () => <Input />;
+const validations = [
+  {
+    check: value => value.length > 3,
+    message: "Too short"
+  }
+];
+
+export const FormInput = () => <Input validations={validations} />;

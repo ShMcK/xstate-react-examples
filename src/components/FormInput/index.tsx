@@ -11,24 +11,18 @@ const inputMachine = Machine(
     },
     on: {
       UPDATE: {
+        target: "touched",
         actions: "updateValue"
       }
     },
     states: {
-      untouched: {
-        on: {
-          CHANGE: "touched"
-        }
-      },
+      untouched: {},
       touched: {
         initial: "pending",
-        on: {
-          CHANGE: "touched.pending"
-        },
         states: {
           pending: {
             after: {
-              300: [
+              500: [
                 {
                   cond: "validate",
                   target: "valid"
@@ -51,31 +45,39 @@ const inputMachine = Machine(
   },
   {
     actions: {
-      updateValue: assign((_, event: any) => ({
+      updateValue: assign((_, event) => ({
+        // @ts-ignore
         value: event.value
       })),
-      setError: assign((_, event: any) => ({
-        error: "Error"
-      })),
-      clearError: assign((_, event: any) => ({
+      clearError: assign((_, event) => ({
         error: ""
       }))
     }
   }
 );
 
-export const Input = () => {
+interface Props {
+  validations: { check: (value: string) => boolean; message: string }[];
+}
+
+export const Input = ({ validations }: Props) => {
   const [current, send] = useMachine(inputMachine, {
+    actions: {
+      setError: assign((ctx, event) => ({
+        error: validations.filter(({ check }) => !check(ctx.value))[0].message
+      }))
+    },
     guards: {
-      validate(e, f, g) {
-        return e.value.length > 3;
+      validate(ctx, f, g) {
+        return !validations.filter(({ check }) => !check(ctx.value)).length;
       }
     }
   });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     send({ type: "UPDATE", value: e.target.value });
-    send({ type: "CHANGE" });
   };
+
   return (
     <>
       <div>{JSON.stringify(current.value)}</div>
