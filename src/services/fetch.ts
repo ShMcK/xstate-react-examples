@@ -15,6 +15,8 @@ interface State {
 
 type Event =
   | { type: "FETCH" }
+  | { type: "REFRESH" }
+  | { type: "RETRY" }
   | { type: "RESOLVE"; data: any }
   | { type: "REJECT"; error: Error };
 
@@ -36,12 +38,12 @@ export const fetchMachine = Machine<Context, State, Event>(
       },
       failed: {
         on: {
-          FETCH: "pending"
+          RETRY: "pending"
         }
       },
       successful: {
         on: {
-          FETCH: "pending"
+          REFRESH: "pending"
         }
       }
     }
