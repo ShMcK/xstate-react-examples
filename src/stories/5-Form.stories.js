@@ -27,10 +27,14 @@ const onSubmitFail = () =>
   });
 
 export const submitFail = () => (
-  <Form onSubmit={onSubmitFail}>
-    <Field>
-      <TextInput />
-    </Field>
+  <Form
+    onSubmit={onSubmitFail}
+    formElements={[
+      <Field>
+        <TextInput />
+      </Field>
+    ]}
+  >
     <button type="submit">Submit</button>
   </Form>
 );

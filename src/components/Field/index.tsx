@@ -58,10 +58,10 @@ const fieldMachine = Machine(
             }
           },
           invalid: {
-            onEntry: ["setError"]
+            onEntry: ["setError", "sendInvalid"]
           },
           valid: {
-            onEntry: ["clearError"]
+            onEntry: ["clearError", "sendValid"]
           }
         }
       }
@@ -90,13 +90,17 @@ export const Field = (props: Props) => {
     },
     services: {
       validate: createValidator(props.validators)
+    },
+    actions: {
+      sendValid: () => console.log({ type: "VALID" }),
+      sendInvalid: () => console.log({ type: "INVALID" })
     }
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     send({ type: "UPDATE", value });
-    props.onChange(value);
+    props.onChange && props.onChange(value);
   };
 
   return React.cloneElement(props.children, {
