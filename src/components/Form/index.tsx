@@ -1,17 +1,16 @@
 import { useMachine } from "@xstate/react";
 import React from "react";
 import { assign, Machine, spawn } from "xstate";
-import { fieldMachine } from "./FormField";
+import { createFieldMachine } from "./FormField";
 
 const createFormMachine = machines =>
   Machine({
     id: "form",
-    initial: "untouched",
+    initial: "valid",
     context: {},
     // @ts-ignore
     entry: assign(machines),
     states: {
-      untouched: {},
       invalid: {
         on: {
           VALID: "valid"
@@ -42,29 +41,42 @@ interface Props {
   children: any;
 }
 
-const useForm = ({ props, initialValues }) => {
+const useForm = ({ schema, onSubmit }) => {
+  const initialValues = {};
   const assignMachines = {};
 
-  const form = {};
-  const items = Object.keys(initialValues);
+  const items = Object.keys(schema);
 
   for (const item of items) {
-    assignMachines[item] = () => spawn(fieldMachine, { name: "email" });
+    const value = schema[item].value;
+    initialValues[item] = value;
+    assignMachines[item] = () =>
+      spawn(
+        createFieldMachine({
+          value,
+          validators: schema[item].validators
+        }),
+        { name: "email" }
+      );
   }
 
+  const [values, setValues] = React.useState(initialValues);
+
   const [current, send] = useMachine(createFormMachine(assignMachines), {
-    current: props.initialValues || {},
+    current: initialValues || {},
     services: {
-      onSubmit: props.onSubmit
+      onSubmit
     }
   });
+
+  const form = {};
 
   for (const item of items) {
     form[item] = {};
     form[item].onChange = e => {
       e.preventDefault();
       const value = e.target.value;
-      current.context["email"].send({ type: "UPDATE", value }, { to: item });
+      current.context[item].send({ type: "UPDATE", value }, { to: item });
       setValues({ [item]: value });
     };
   }
@@ -74,32 +86,60 @@ const useForm = ({ props, initialValues }) => {
     send({ type: "SUBMIT" });
   };
 
-  const [values, setValues] = React.useState(initialValues);
-
   return {
     handleSubmit,
     values,
-    form
+    form,
+    current
   };
 };
 
 export const Form = (props: Props) => {
-  const initialValues = {
-    email: ""
+  const schema = {
+    email: {
+      value: "",
+      validators: [
+        {
+          check: value => value.length < 3,
+          message: "Too short"
+        }
+      ]
+    },
+    password: {
+      value: "",
+      validators: []
+    }
   };
 
-  const { handleSubmit, values, form } = useForm({ props, initialValues });
+  const { handleSubmit, values, form, current } = useForm({
+    onSubmit: props.onSubmit,
+    schema
+  });
+
+  console.log(current.context.email.state.context);
 
   return (
     <>
-      {/* <div>State:{JSON.stringify(current.value)}</div>
-      <div>Context:{JSON.stringify(current.context)}</div> */}
+      <div>State:{JSON.stringify(current.value)}</div>
+      <div>Context:{JSON.stringify(current.context)}</div>
       <form onSubmit={handleSubmit}>
-        <input
-          type="string"
-          onChange={form.email.onChange}
-          value={values.email}
-        />
+        <div>
+          <input
+            type="string"
+            onChange={form.email.onChange}
+            value={current.context.email.state.context.value}
+          />
+          {current.context.email.state.context.errors.length ? (
+            <div>{current.context.email.state.context.errors[0]}</div>
+          ) : null}
+        </div>
+        <div>
+          <input
+            type="password"
+            onChange={form.password.onChange}
+            value={current.context.password.state.context.value}
+          />
+        </div>
       </form>
     </>
   );
